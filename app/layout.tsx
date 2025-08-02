@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>Harvey's Preorder</title>
+        <title>Harvey's Preorder system</title>
         <meta name="description" content="Preorder now!" />
       </head>
       <body
