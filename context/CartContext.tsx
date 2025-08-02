@@ -6,10 +6,12 @@ export interface CartItem {
   id: string;
   image: string;
   name: string;
-  price: string;
+  price: string; // Keep as single string for cart items
   description: string;
   category: string;
   quantity: number;
+  selectedSize?: string; // Add selected size for cart items
+  type?: string; 
 }
 
 interface CartContextType {
@@ -133,7 +135,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const getCartTotal = () => {
     return cartItems.reduce((total, item) => {
-      const price = parseFloat(item.price.replace('$', ''));
+      const price = parseFloat(item.price.replace('₹', ''));
       return total + (price * item.quantity);
     }, 0);
   };

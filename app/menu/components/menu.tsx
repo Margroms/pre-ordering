@@ -8,9 +8,11 @@ import CartAddition from '../modal/cartaddition';
 interface MenuItem {
   image: string;
   name: string;
-  price: string;
+  price: string[]; // Array of prices
   description: string;
   category: string;
+  size?: string[]; // Array of sizes
+  type?: string;
 }
 
 function Menu() {
@@ -76,6 +78,8 @@ function Menu() {
                 price={item.price}
                 description={item.description}
                 category={item.category}
+                size={item.size}
+                type={item.type}
                 onAdd={() => handleAddClick(item)}
               />
             </motion.div>

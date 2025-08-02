@@ -5,13 +5,15 @@ import { useCart } from '@/context/CartContext';
 interface FoodcardProps {
   image: string;
   name: string;
-  price: string;
+  price: string[]; // Array of prices
   category: string;
   description: string;
+  size?: string[]; // Array of sizes
+  type?: string;
   onAdd: () => void;
 }
 
-function Foodcard({ image, name, price, category, description, onAdd }: FoodcardProps) {
+function Foodcard({ image, name, price, category, description, size, type, onAdd }: FoodcardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const { isLoading } = useCart();
@@ -21,6 +23,11 @@ function Foodcard({ image, name, price, category, description, onAdd }: Foodcard
     await onAdd();
     setIsAdding(false);
   };
+
+  // Display price range or single price
+  const displayPrice = price.length > 1 
+    ? `${price[0]} - ${price[price.length - 1]}`
+    : price[0];
 
   return (
     <motion.div 
@@ -82,22 +89,46 @@ function Foodcard({ image, name, price, category, description, onAdd }: Foodcard
         transition={{ delay: 0.2, duration: 0.4 }}
       >
         <div className="mb-3">
-          <motion.h3 
-            className="text-lg sm:text-xl font-bold font-grimpt text-gray-800 mb-1 line-clamp-2"
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
-          >
-            {name}
-          </motion.h3>
+          <div className="flex items-start justify-between mb-2">
+            <motion.h3 
+              className="text-lg sm:text-xl font-bold font-grimpt text-gray-800 mb-1 line-clamp-2 flex-1"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+            >
+              {name}
+            </motion.h3>
+            {type && (
+              <motion.span 
+                className={`inline-block px-2 py-1 rounded text-xs font-bold ml-2 ${
+                  type === 'Veg' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                }`}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.4, duration: 0.3 }}
+              >
+                {type}
+              </motion.span>
+            )}
+          </div>
           <motion.p 
             className="text-lg sm:text-xl font-bold text-[#eb3e04] font-garet"
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.4 }}
           >
-            {price}
+            {displayPrice}
           </motion.p>
+          {size && size.length > 1 && (
+            <motion.p 
+              className="text-sm text-gray-600 font-garet mt-1"
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.45, duration: 0.4 }}
+            >
+              Available in: {size.join(', ')}
+            </motion.p>
+          )}
         </div>
         
         <motion.button

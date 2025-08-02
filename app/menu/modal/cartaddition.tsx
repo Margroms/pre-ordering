@@ -10,20 +10,33 @@ interface CartAdditionProps {
   item: {
     image: string;
     name: string;
-    price: string;
+    price: string[]; // Array of prices for different sizes
     description: string;
     category: string;
+    size?: string[]; // Array of sizes
+    type?: string;
   } | null;
 }
 
 function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
   const { addToCart, isLoading } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [selectedSizeIndex, setSelectedSizeIndex] = useState(0); // Track selected size index
 
   const handleAddToCart = async () => {
     if (item) {
-      await addToCart(item, quantity);
+      const cartItem = {
+        image: item.image,
+        name: item.name,
+        price: item.price[selectedSizeIndex], // Use selected price
+        description: item.description,
+        category: item.category,
+        selectedSize: item.size ? item.size[selectedSizeIndex] : undefined,
+        type: item.type,
+      };
+      await addToCart(cartItem, quantity);
       setQuantity(1);
+      setSelectedSizeIndex(0);
       onClose();
     }
   };
@@ -33,8 +46,8 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
 
   if (!item) return null;
 
-  const itemPrice = parseFloat(item.price.replace(/[^0-9.]/g, '')) || 0;
-  const totalPrice = (itemPrice * quantity).toFixed(2);
+  const currentPrice = parseFloat(item.price[selectedSizeIndex].replace(/[^0-9.]/g, '')) || 0;
+  const totalPrice = (currentPrice * quantity).toFixed(2);
 
   const backdropVariants = {
     hidden: { opacity: 0 },
@@ -154,9 +167,24 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.4 }}
+                  key={`price-${selectedSizeIndex}`}
                 >
-                  {item.price}
+                  {item.price[selectedSizeIndex]}
                 </motion.p>
+                {item.type && (
+                  <motion.span 
+                    className={`inline-block px-2 py-1 rounded text-xs font-bold mb-3 ${
+                      item.type === 'Veg' 
+                        ? 'bg-green-500 text-white' 
+                        : 'bg-red-500 text-white'
+                    }`}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.45 }}
+                  >
+                    {item.type}
+                  </motion.span>
+                )}
                 <motion.p 
                   className="text-white font-garet leading-relaxed"
                   initial={{ opacity: 0 }}
@@ -166,6 +194,39 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                   {item.description}
                 </motion.p>
               </motion.div>
+
+              {/* Size selector (if multiple sizes available) */}
+              {item.size && item.size.length > 1 && (
+                <motion.div 
+                  className="mb-6"
+                  variants={itemVariants}
+                >
+                  <span className="text-lg font-semibold mb-3 block">Size</span>
+                  <div className="flex flex-wrap gap-2">
+                    {item.size.map((size, index) => (
+                      <motion.button
+                        key={size}
+                        onClick={() => setSelectedSizeIndex(index)}
+                        className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                          selectedSizeIndex === index
+                            ? 'bg-white text-black'
+                            : 'bg-gray-500 text-white hover:bg-gray-400'
+                        }`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 * index }}
+                      >
+                        <div className="text-center">
+                          <div className="text-sm">{size}</div>
+                          <div className="text-xs font-bold">{item.price[index]}</div>
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
 
               {/* Quantity selector */}
               <motion.div 
@@ -234,7 +295,7 @@ function CartAddition({ isOpen, onClose, item }: CartAdditionProps) {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.2 }}
                   >
-                    Add to Cart - ${totalPrice}
+                    Add to Cart - ₹{totalPrice}
                   </motion.div>
                 )}
               </motion.button>

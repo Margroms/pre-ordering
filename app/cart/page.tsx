@@ -150,6 +150,11 @@ function Cart() {
                     transition={{ delay: 0.1 }}
                   >
                     {item.name}
+                    {item.selectedSize && (
+                      <span className="text-sm font-normal text-gray-600 ml-2">
+                        ({item.selectedSize})
+                      </span>
+                    )}
                   </motion.h2>
                   <motion.p 
                     className="text-base sm:text-lg font-semibold text-[#eb3e04] font-garet"
@@ -159,6 +164,18 @@ function Cart() {
                   >
                     {item.price}
                   </motion.p>
+                  {item.type && (
+                    <motion.span 
+                      className={`inline-block px-2 py-1 rounded text-xs font-bold mt-1 ${
+                        item.type === 'Veg' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                      }`}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.25 }}
+                    >
+                      {item.type}
+                    </motion.span>
+                  )}
                 </div>
 
                 {/* Quantity Controls */}
@@ -222,7 +239,7 @@ function Cart() {
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.3 }}
                   >
-                    ${(parseFloat(item.price.replace('$', '')) * item.quantity).toFixed(2)}
+                    ₹{(parseFloat(item.price.replace('₹', '')) * item.quantity).toFixed(2)}
                   </motion.p>
                 </div>
               </motion.div>
@@ -252,7 +269,7 @@ function Cart() {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            ${getCartTotal().toFixed(2)}
+            ₹{getCartTotal().toFixed(2)}
           </motion.p>
         </motion.div>
         <motion.button 
