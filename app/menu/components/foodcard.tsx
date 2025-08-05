@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
+import Image from 'next/image';
 
 interface FoodcardProps {
   image: string;
@@ -13,7 +14,7 @@ interface FoodcardProps {
   onAdd: () => void;
 }
 
-function Foodcard({ image, name, price, category, description, size, type, onAdd }: FoodcardProps) {
+const Foodcard: React.FC<FoodcardProps> = React.memo(({ image, name, price, category, description, size, type, onAdd }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const { isLoading } = useCart();
@@ -39,7 +40,6 @@ function Foodcard({ image, name, price, category, description, size, type, onAdd
         y: -5,
         transition: { duration: 0.2 }
       }}
-      layout
     >
       <div className="relative h-48 sm:h-52 bg-gray-200 overflow-hidden">
         {!imageLoaded && (
@@ -51,17 +51,11 @@ function Foodcard({ image, name, price, category, description, size, type, onAdd
           />
         )}
         
-        <motion.img 
-          src={image} 
+        <Image
+          src={image}
           alt={name}
           className="w-full h-full object-cover"
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ 
-            scale: imageLoaded ? 1 : 1.1, 
-            opacity: imageLoaded ? 1 : 0 
-          }}
-          transition={{ duration: 0.6, ease: "easeOut" as const }}
-          whileHover={{ scale: 1.05 }}
+          layout="fill"
           onLoad={() => setImageLoaded(true)}
           onError={(e) => {
             const target = e.currentTarget as HTMLImageElement;
@@ -168,6 +162,6 @@ function Foodcard({ image, name, price, category, description, size, type, onAdd
       </motion.div>
     </motion.div>
   );
-}
+});
 
 export default Foodcard;

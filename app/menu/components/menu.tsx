@@ -70,7 +70,6 @@ function Menu() {
             <motion.div
               key={item.name}
               variants={itemVariants}
-              layout
             >
               <Foodcard
                 image={item.image}
