@@ -153,15 +153,15 @@ const Navbar = () => {
                   <motion.li
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.6 }}
+                    transition={{ delay: 0.7 }}
                     whileHover={{ x: 10, scale: 1.05 }}
                   >
                     <Link 
-                      href="/menu" 
+                      href="/privacy-policy" 
                       onClick={() => setSidebarOpen(false)}
                       className="block text-white hover:text-[#eb3e04] transition-colors"
                     >
-                      Menu
+                      Privacy Policy
                     </Link>
                   </motion.li>
                 </motion.ul>
