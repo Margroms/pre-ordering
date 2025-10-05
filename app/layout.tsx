@@ -2,6 +2,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { PaymentProvider } from "@/context/PaymentContext";
 import Navbar from "@/components/Navbar";
 import ToastProvider from "@/components/ToastProvider";
 import { usePathname } from "next/navigation";
@@ -26,10 +28,14 @@ export default function RootLayout({
       <body
         className={`font-garet antialiased bg-[url('/bg.svg')] bg-cover bg-center bg-no-repeat`}
       >
-        <CartProvider>
-          <LayoutContent>{children}</LayoutContent>
-          <ToastProvider />
-        </CartProvider>
+        <AuthProvider>
+          <CartProvider>
+            <PaymentProvider>
+              <LayoutContent>{children}</LayoutContent>
+              <ToastProvider />
+            </PaymentProvider>
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );

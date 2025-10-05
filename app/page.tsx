@@ -1,7 +1,10 @@
+"use client";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
+  const { user } = useAuth();
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="flex flex-col items-center justify-center text-center">
@@ -20,7 +23,7 @@ export default function Home() {
         <div className="flex gap-4">
          
           <Link
-            href="/menu"
+            href={user ? "/menu" : "/login"}
             className="inline-block rounded bg-transparent border-2 border-white px-8 py-4 text-white font-grimpt text-2xl font-bold shadow-lg transition-transform hover:scale-105 hover:bg-white hover:text-[#eb3e04]"
           >
             Pre-Order Now

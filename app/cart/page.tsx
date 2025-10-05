@@ -2,10 +2,13 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
-import { Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
+import { usePayment } from '@/context/PaymentContext';
+import { Plus, Minus, Trash2, ShoppingBag, Clock, CreditCard } from 'lucide-react';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 function Cart() {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal, isLoading } = useCart();
+  const { isProcessing, visitTime, setVisitTime, processPayment } = usePayment();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -37,14 +40,15 @@ function Cart() {
     },
   };
 
-  if (cartItems.length === 0) {
-    return (
-      <motion.div 
-        className="px-4 py-8 min-h-screen flex flex-col items-center justify-center text-white"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
+  const CartContent = () => {
+    if (cartItems.length === 0) {
+      return (
+        <motion.div 
+          className="px-4 py-8 min-h-screen flex flex-col items-center justify-center text-white"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
         <div className="text-center">
           <motion.div
             initial={{ scale: 0 }}
@@ -81,11 +85,11 @@ function Cart() {
             Browse Menu
           </motion.a>
         </div>
-      </motion.div>
-    );
-  }
+        </motion.div>
+      );
+    }
 
-  return (
+    return (
     <motion.div 
       className="px-4 py-6 min-h-screen"
       initial={{ opacity: 0 }}
@@ -248,40 +252,92 @@ function Cart() {
         </AnimatePresence>
       </motion.div>
 
-      {/* Cart Summary */}
+      {/* Visit Time Selection */}
       <motion.div 
-        className="mt-6 sm:mt-8 bg-[url(/cartbg.svg)] p-4 sm:p-6 rounded-xl shadow-sm border"
+        className="mt-6 sm:mt-8 bg-white/10 backdrop-blur-md p-4 sm:p-6 rounded-xl border border-white/20"
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.5, duration: 0.6 }}
       >
         <motion.div 
-          className="flex justify-between items-center mb-4"
+          className="flex items-center gap-3 mb-4"
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          <h2 className="text-lg sm:text-xl font-bold font-grimpt text-gray-800">Total</h2>
-          <motion.p 
-            className="text-xl sm:text-2xl font-bold text-[#eb3e04] font-garet"
-            key={`total-${getCartTotal()}`}
-            initial={{ scale: 1.1, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            ₹{getCartTotal().toFixed(2)}
-          </motion.p>
+          <Clock className="w-6 h-6 text-white" />
+          <h3 className="text-lg sm:text-xl font-bold font-grimpt text-white">When will you visit?</h3>
         </motion.div>
+        
+        <motion.div 
+          className="relative"
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.7 }}
+        >
+          <select
+            value={visitTime}
+            onChange={(e) => setVisitTime(e.target.value)}
+            className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white font-garet focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent appearance-none cursor-pointer"
+          >
+            <option value="" className="bg-gray-800 text-white">Select your visit time</option>
+            <option value="10" className="bg-gray-800 text-white">10 minutes</option>
+            <option value="15" className="bg-gray-800 text-white">15 minutes</option>
+            <option value="30" className="bg-gray-800 text-white">30 minutes</option>
+            <option value="45" className="bg-gray-800 text-white">45 minutes</option>
+            <option value="60" className="bg-gray-800 text-white">1 hour</option>
+            <option value="90" className="bg-gray-800 text-white">1.5 hours</option>
+            <option value="120" className="bg-gray-800 text-white">2 hours</option>
+          </select>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </motion.div>
+      </motion.div>
+
+      {/* Payment Summary */}
+      <motion.div 
+        className="mt-6 sm:mt-8 bg-[url(/cartbg.svg)] p-4 sm:p-6 rounded-xl shadow-sm border"
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.6, duration: 0.6 }}
+      >
+        <motion.div 
+          className="space-y-3 mb-6"
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.7 }}
+        >
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 font-garet">Total Order Value:</span>
+            <span className="text-lg font-bold text-gray-800 font-garet">₹{getCartTotal().toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 font-garet">Advance Payment (50%):</span>
+            <span className="text-lg font-bold text-[#eb3e04] font-garet">₹{(getCartTotal() * 0.5).toFixed(2)}</span>
+          </div>
+          <div className="border-t border-gray-200 pt-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 font-garet">Remaining (50%):</span>
+              <span className="text-lg font-bold text-gray-800 font-garet">₹{(getCartTotal() * 0.5).toFixed(2)}</span>
+            </div>
+            <p className="text-sm text-gray-500 font-garet mt-1">To be paid at the restaurant</p>
+          </div>
+        </motion.div>
+
         <motion.button 
-          className="w-full bg-[#eb3e04] text-white py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg hover:bg-[#d32f02] active:scale-95 transition-all font-grimpt disabled:opacity-70"
-          disabled={isLoading}
+          onClick={processPayment}
+          disabled={isLoading || isProcessing || !visitTime}
+          className="w-full bg-[#eb3e04] text-white py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg hover:bg-[#d32f02] active:scale-95 transition-all font-grimpt disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          whileHover={{ scale: isLoading ? 1 : 1.02 }}
-          whileTap={{ scale: isLoading ? 1 : 0.98 }}
+          transition={{ delay: 0.8 }}
+          whileHover={{ scale: (isLoading || isProcessing || !visitTime) ? 1 : 1.02 }}
+          whileTap={{ scale: (isLoading || isProcessing || !visitTime) ? 1 : 0.98 }}
         >
-          {isLoading ? (
+          {isLoading || isProcessing ? (
             <motion.div 
               className="flex items-center justify-center"
               initial={{ opacity: 0 }}
@@ -295,11 +351,44 @@ function Cart() {
               Processing...
             </motion.div>
           ) : (
-            "Proceed to Checkout"
+            <>
+              <CreditCard className="w-5 h-5" />
+              Pay Advance ₹{(getCartTotal() * 0.5).toFixed(2)}
+            </>
           )}
         </motion.button>
       </motion.div>
+
+      {/* Restaurant Payment Notice */}
+      <motion.div 
+        className="mt-4 bg-yellow-50 border border-yellow-200 p-4 rounded-xl"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.9, duration: 0.6 }}
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0">
+            <svg className="w-5 h-5 text-yellow-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-yellow-800 font-grimpt mb-1">Restaurant Payment Required</h4>
+            <p className="text-sm text-yellow-700 font-garet">
+              The remaining 50% (₹{(getCartTotal() * 0.5).toFixed(2)}) must be paid at the restaurant when you collect your order. 
+              This ensures food quality and reduces waste.
+            </p>
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
+    );
+  };
+
+  return (
+    <ProtectedRoute>
+      <CartContent />
+    </ProtectedRoute>
   );
 }
 

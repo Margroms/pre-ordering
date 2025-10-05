@@ -1,15 +1,18 @@
 "use client";
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, ShoppingCart } from 'lucide-react';
+import { Menu, ShoppingCart, User, LogOut } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/context/AuthContext';
 
 const Navbar = () => {
   const { getCartItemsCount } = useCart();
+  const { user, userDetails, signOut } = useAuth();
   const cartCount = getCartItemsCount();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   return (
     <motion.nav 
@@ -45,48 +48,106 @@ const Navbar = () => {
           </motion.div>
         </Link>
         
-        <Link href="/cart" className="relative">
-          <motion.div
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="relative"
-          >
-            <ShoppingCart className="text-white w-8 h-8 cursor-pointer" />
-            <AnimatePresence>
-              {cartCount > 0 && (
-                <motion.span 
-                  className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ 
-                    scale: 1, 
-                    opacity: 1,
-                    transition: {
-                      type: "spring" as const,
-                      stiffness: 400,
-                      damping: 10
-                    }
-                  }}
-                  exit={{ 
-                    scale: 0, 
-                    opacity: 0,
-                    transition: {
-                      duration: 0.2
-                    }
-                  }}
-                  key={cartCount}
-                >
-                  <motion.span
-                    initial={{ scale: 1.5 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.2 }}
+        <div className="flex items-center gap-4">
+          <Link href="/cart" className="relative">
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="relative"
+            >
+              <ShoppingCart className="text-white w-8 h-8 cursor-pointer" />
+              <AnimatePresence>
+                {cartCount > 0 && (
+                  <motion.span 
+                    className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ 
+                      scale: 1, 
+                      opacity: 1,
+                      transition: {
+                        type: "spring" as const,
+                        stiffness: 400,
+                        damping: 10
+                      }
+                    }}
+                    exit={{ 
+                      scale: 0, 
+                      opacity: 0,
+                      transition: {
+                        duration: 0.2
+                      }
+                    }}
+                    key={cartCount}
                   >
-                    {cartCount}
+                    <motion.span
+                      initial={{ scale: 1.5 }}
+                      animate={{ scale: 1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {cartCount}
+                    </motion.span>
                   </motion.span>
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </Link>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </Link>
+
+          {user && (
+            <div className="relative">
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="cursor-pointer"
+              >
+                <User className="text-white w-8 h-8" />
+              </motion.div>
+
+              <AnimatePresence>
+                {profileDropdownOpen && (
+                  <>
+                    <motion.div 
+                      className="fixed inset-0 z-40"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setProfileDropdownOpen(false)}
+                    />
+                    <motion.div 
+                      className="absolute right-0 top-12 w-64 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 p-4 z-50"
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <div className="text-white">
+                        <h3 className="font-grimpt text-lg font-bold mb-3">Profile</h3>
+                        <div className="space-y-2 mb-4">
+                          <p className="font-garet">
+                            <span className="text-gray-300">Name:</span> {userDetails?.name}
+                          </p>
+                          <p className="font-garet">
+                            <span className="text-gray-300">Email:</span> {userDetails?.email}
+                          </p>
+                          <p className="font-garet">
+                            <span className="text-gray-300">Phone:</span> {userDetails?.phone}
+                          </p>
+                        </div>
+                        <button
+                          onClick={signOut}
+                          className="w-full flex items-center justify-center gap-2 bg-transparent border border-white/30 text-white font-grimpt py-2 px-4 rounded-lg hover:bg-white/10 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Logout
+                        </button>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+        </div>
         
         <AnimatePresence>
           {sidebarOpen && (
