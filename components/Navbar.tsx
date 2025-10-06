@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, ShoppingCart, User, LogOut } from 'lucide-react';
+import { Menu, ShoppingCart, User, LogOut, FileText } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
@@ -49,6 +49,16 @@ const Navbar = () => {
         </Link>
         
         <div className="flex items-center gap-4">
+          <Link href="/invoices" className="relative">
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="relative"
+            >
+              <FileText className="text-white w-8 h-8 cursor-pointer" />
+            </motion.div>
+          </Link>
+
           <Link href="/cart" className="relative">
             <motion.div
               whileHover={{ scale: 1.1 }}
@@ -209,6 +219,20 @@ const Navbar = () => {
                       className="block text-white hover:text-[#eb3e04] transition-colors"
                     >
                       Cart
+                    </Link>
+                  </motion.li>
+                  <motion.li
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                    whileHover={{ x: 10, scale: 1.05 }}
+                  >
+                    <Link 
+                      href="/invoices" 
+                      onClick={() => setSidebarOpen(false)}
+                      className="block text-white hover:text-[#eb3e04] transition-colors"
+                    >
+                      Invoices
                     </Link>
                   </motion.li>
                   <motion.li

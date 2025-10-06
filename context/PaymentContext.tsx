@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState } from 'react'
 import { useAuth } from './AuthContext'
 import { useCart } from './CartContext'
+import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 
 interface PaymentContextType {
@@ -19,6 +20,7 @@ export function PaymentProvider({ children }: { children: React.ReactNode }) {
   const { cartItems, getCartTotal, clearCart } = useCart()
   const [isProcessing, setIsProcessing] = useState(false)
   const [visitTime, setVisitTime] = useState('')
+  const router = useRouter()
 
   const processPayment = async () => {
     if (!visitTime) {
@@ -97,9 +99,16 @@ export function PaymentProvider({ children }: { children: React.ReactNode }) {
               })
 
               if (verifyResponse.ok) {
-                toast.success('Payment successful! Your order is confirmed.')
-                clearCart()
-                // Redirect to success page or show success message
+                const result = await verifyResponse.json()
+                toast.success(`Payment successful! Invoice #${result.invoiceNumber} generated.`, {
+                  duration: 5000,
+                  icon: '🎉',
+                })
+                await clearCart()
+                // Redirect to invoices page to show the new invoice
+                setTimeout(() => {
+                  router.push('/invoices')
+                }, 2000)
               } else {
                 throw new Error('Payment verification failed')
               }

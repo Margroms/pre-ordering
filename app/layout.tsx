@@ -4,6 +4,7 @@ import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { PaymentProvider } from "@/context/PaymentContext";
+import { InvoiceProvider } from "@/context/InvoiceContext";
 import Navbar from "@/components/Navbar";
 import ToastProvider from "@/components/ToastProvider";
 import { usePathname } from "next/navigation";
@@ -31,8 +32,10 @@ export default function RootLayout({
         <AuthProvider>
           <CartProvider>
             <PaymentProvider>
-              <LayoutContent>{children}</LayoutContent>
-              <ToastProvider />
+              <InvoiceProvider>
+                <LayoutContent>{children}</LayoutContent>
+                <ToastProvider />
+              </InvoiceProvider>
             </PaymentProvider>
           </CartProvider>
         </AuthProvider>

@@ -19,6 +19,7 @@ interface CartContextType {
   addToCart: (item: Omit<CartItem, 'id' | 'quantity'>, quantity?: number) => Promise<void>;
   removeFromCart: (id: string) => Promise<void>;
   updateQuantity: (id: string, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
   getCartTotal: () => number;
   getCartItemsCount: () => number;
   isLoading: boolean;
@@ -133,6 +134,24 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const clearCart = async () => {
+    setIsLoading(true);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    try {
+      setCartItems([]);
+      toast.success('Cart cleared!', {
+        icon: '🗑️',
+      });
+    } catch (error) {
+      toast.error('Failed to clear cart');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const getCartTotal = () => {
     return cartItems.reduce((total, item) => {
       const price = parseFloat(item.price.replace('₹', ''));
@@ -150,6 +169,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       addToCart,
       removeFromCart,
       updateQuantity,
+      clearCart,
       getCartTotal,
       getCartItemsCount,
       isLoading,
