@@ -54,8 +54,8 @@ const Foodcard: React.FC<FoodcardProps> = React.memo(({ image, name, price, cate
         <Image
           src={image}
           alt={name}
-          className="w-full h-full object-cover"
-          layout="fill"
+          fill
+          className="object-cover"
           onLoad={() => setImageLoaded(true)}
           onError={(e) => {
             const target = e.currentTarget as HTMLImageElement;

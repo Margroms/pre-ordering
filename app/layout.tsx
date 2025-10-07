@@ -1,4 +1,3 @@
-"use client";
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
@@ -7,13 +6,12 @@ import { PaymentProvider } from "@/context/PaymentContext";
 import { InvoiceProvider } from "@/context/InvoiceContext";
 import Navbar from "@/components/Navbar";
 import ToastProvider from "@/components/ToastProvider";
-import { usePathname } from "next/navigation";
+import LayoutContent from "./components/LayoutContent";
 
-// Move metadata to a separate file since we're using "use client"
-// export const metadata: Metadata = {
-//   title: "Harvey's Preorder",
-//   description: "Preorder now!",
-// };
+export const metadata: Metadata = {
+  title: "Harvey's Preorder",
+  description: "Preorder now!",
+};
 
 export default function RootLayout({
   children,
@@ -22,10 +20,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <title>Harvey's Preorder system</title>
-        <meta name="description" content="Preorder now!" />
-      </head>
       <body
         className={`font-garet antialiased bg-[url('/bg.svg')] bg-cover bg-center bg-no-repeat`}
       >
@@ -41,17 +35,5 @@ export default function RootLayout({
         </AuthProvider>
       </body>
     </html>
-  );
-}
-
-function LayoutContent({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const isHomePage = pathname === '/';
-
-  return (
-    <>
-      {!isHomePage && <Navbar />}
-      {children}
-    </>
   );
 }

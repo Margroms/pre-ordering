@@ -42,7 +42,7 @@ export interface Invoice {
 
 export interface InvoiceContextType {
   invoices: Invoice[];
-  addInvoice: (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addInvoice: (invoice: Omit<Invoice, 'id' | 'invoiceNumber' | 'createdAt' | 'updatedAt'>) => Promise<Invoice>;
   getInvoices: (userId: string) => Promise<Invoice[]>;
   getInvoiceById: (id: string) => Promise<Invoice | null>;
   updateInvoiceStatus: (id: string, status: Invoice['status']) => Promise<void>;
