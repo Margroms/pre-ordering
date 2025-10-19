@@ -11,6 +11,11 @@ import LayoutContent from "./components/LayoutContent";
 export const metadata: Metadata = {
   title: "Harvey's Preorder",
   description: "Preorder now!",
+  icons: {
+    icon: '/logo.svg',
+    shortcut: '/logo.svg',
+    apple: '/logo.svg',
+  },
 };
 
 export default function RootLayout({

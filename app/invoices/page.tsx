@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Calendar, CreditCard, Eye, Download, ArrowLeft } from 'lucide-react';
+import { FileText, Calendar, CreditCard, Eye, Download, ArrowLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useInvoice } from '@/context/InvoiceContext';
@@ -43,10 +43,11 @@ const InvoicesPage = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'bg-blue-100 text-blue-800';
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -85,9 +86,18 @@ const InvoicesPage = () => {
               <ArrowLeft className="w-5 h-5 mr-2" />
               Back to Home
             </Link>
-            <div className="flex items-center gap-4 mb-2">
-              <FileText className="w-8 h-8 text-[#eb3e04]" />
-              <h1 className="text-4xl font-grimpt font-bold text-gray-800">My Invoices</h1>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-4">
+                <FileText className="w-8 h-8 text-[#eb3e04]" />
+                <h1 className="text-4xl font-grimpt font-bold text-gray-800">My Invoices</h1>
+              </div>
+              <button
+                onClick={fetchInvoices}
+                className="flex items-center gap-2 px-4 py-2 bg-[#eb3e04] text-white rounded-lg hover:bg-red-600 transition-colors font-garet"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </button>
             </div>
             <p className="text-gray-600 font-garet">View and manage your order invoices</p>
           </motion.div>
@@ -160,6 +170,21 @@ const InvoicesPage = () => {
                             </span>
                           )}
                         </p>
+                        {invoice.status === 'pending' && (
+                          <p className="text-sm text-yellow-600 font-garet mt-1">
+                            ⏳ <span className="font-semibold">Status:</span> Waiting for restaurant confirmation
+                          </p>
+                        )}
+                        {invoice.status === 'confirmed' && (
+                          <p className="text-sm text-blue-600 font-garet mt-1">
+                            ✅ <span className="font-semibold">Status:</span> Order confirmed! Please visit at scheduled time.
+                          </p>
+                        )}
+                        {invoice.status === 'cancelled' && (
+                          <p className="text-sm text-red-600 font-garet mt-1">
+                            ❌ <span className="font-semibold">Status:</span> Order cancelled by restaurant
+                          </p>
+                        )}
                       </div>
                     </div>
 

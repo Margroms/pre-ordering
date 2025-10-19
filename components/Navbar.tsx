@@ -49,58 +49,62 @@ const Navbar = () => {
         </Link>
         
         <div className="flex items-center gap-4">
-          <Link href="/invoices" className="relative">
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="relative"
-            >
-              <FileText className="text-white w-8 h-8 cursor-pointer" />
-            </motion.div>
-          </Link>
+          {user && (
+            <>
+              <Link href="/invoices" className="relative">
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="relative"
+                >
+                  <FileText className="text-white w-8 h-8 cursor-pointer" />
+                </motion.div>
+              </Link>
 
-          <Link href="/cart" className="relative">
-            <motion.div
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="relative"
-            >
-              <ShoppingCart className="text-white w-8 h-8 cursor-pointer" />
-              <AnimatePresence>
-                {cartCount > 0 && (
-                  <motion.span 
-                    className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ 
-                      scale: 1, 
-                      opacity: 1,
-                      transition: {
-                        type: "spring" as const,
-                        stiffness: 400,
-                        damping: 10
-                      }
-                    }}
-                    exit={{ 
-                      scale: 0, 
-                      opacity: 0,
-                      transition: {
-                        duration: 0.2
-                      }
-                    }}
-                    key={cartCount}
-                  >
-                    <motion.span
-                      initial={{ scale: 1.5 }}
-                      animate={{ scale: 1 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {cartCount}
-                    </motion.span>
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          </Link>
+              <Link href="/cart" className="relative">
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="relative"
+                >
+                  <ShoppingCart className="text-white w-8 h-8 cursor-pointer" />
+                  <AnimatePresence>
+                    {cartCount > 0 && (
+                      <motion.span 
+                        className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ 
+                          scale: 1, 
+                          opacity: 1,
+                          transition: {
+                            type: "spring" as const,
+                            stiffness: 400,
+                            damping: 10
+                          }
+                        }}
+                        exit={{ 
+                          scale: 0, 
+                          opacity: 0,
+                          transition: {
+                            duration: 0.2
+                          }
+                        }}
+                        key={cartCount}
+                      >
+                        <motion.span
+                          initial={{ scale: 1.5 }}
+                          animate={{ scale: 1 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {cartCount}
+                        </motion.span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </Link>
+            </>
+          )}
 
           {user && (
             <div className="relative">

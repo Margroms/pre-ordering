@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
 import toast from 'react-hot-toast'
 
 export default function Login() {
@@ -15,6 +16,28 @@ export default function Login() {
   const [showOtp, setShowOtp] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/menu')
+    }
+  }, [user, authLoading, router])
+
+  // Show loading while checking auth status
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-white font-grimpt text-xl">Loading...</div>
+      </div>
+    )
+  }
+
+  // Don't render login form if user is logged in
+  if (user) {
+    return null
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
