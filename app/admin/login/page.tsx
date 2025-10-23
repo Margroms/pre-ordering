@@ -49,7 +49,22 @@ export default function AdminLogin() {
         localStorage.setItem('adminToken', 'admin-authenticated')
         localStorage.setItem('adminEmail', formData.email)
         
-        toast.success('Admin login successful!')
+        // Request notification permissions for mobile alerts
+        if ('Notification' in window) {
+          try {
+            const permission = await Notification.requestPermission()
+            if (permission === 'granted') {
+              toast.success('Admin login successful! Notifications enabled for new orders.')
+            } else {
+              toast.success('Admin login successful! Enable notifications for order alerts.')
+            }
+          } catch (error) {
+            toast.success('Admin login successful!')
+          }
+        } else {
+          toast.success('Admin login successful!')
+        }
+        
         router.push('/admin/dashboard')
       } else {
         toast.error('Invalid admin credentials')

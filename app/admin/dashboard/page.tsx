@@ -22,6 +22,7 @@ import toast from 'react-hot-toast'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import { useRealtimeOrders } from '@/hooks/useRealtimeOrders'
 
 interface Order {
   id: string
@@ -61,6 +62,9 @@ function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const router = useRouter()
+  
+  // Real-time order notifications
+  const { orders: realtimeOrders, isListening, testNotification } = useRealtimeOrders()
 
   useEffect(() => {
     console.log('Admin dashboard useEffect running')
@@ -254,24 +258,44 @@ function AdminDashboard() {
                 <p className="text-sm text-gray-500 font-garet">Harvey's Cafe Management</p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                console.log('Manual refresh clicked')
-                setLoading(true)
-                loadOrders()
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-[#eb3e04] text-white rounded-lg hover:bg-red-600 transition-colors font-garet"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh Orders
-            </button>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-red-600 transition-colors font-garet"
-            >
-              <LogOut className="w-4 h-4" />
-              Logout
-            </button>
+            
+            <div className="flex items-center gap-4">
+              {/* Real-time Status Indicator */}
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${isListening ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                <span className="text-sm font-garet text-gray-600">
+                  {isListening ? 'Live Notifications' : 'Offline'}
+                </span>
+              </div>
+
+              {/* Test Notification Button */}
+              <button
+                onClick={testNotification}
+                className="flex items-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-garet text-sm"
+              >
+                📳 Test Vibration
+              </button>
+
+              <button
+                onClick={() => {
+                  console.log('Manual refresh clicked')
+                  setLoading(true)
+                  loadOrders()
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-[#eb3e04] text-white rounded-lg hover:bg-red-600 transition-colors font-garet"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh Orders
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-red-600 transition-colors font-garet"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>
