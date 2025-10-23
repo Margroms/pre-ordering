@@ -62,11 +62,11 @@ export async function POST(request: NextRequest) {
 
     const invoiceData = {
       id: `invoice_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      invoiceNumber: generateInvoiceNumber(),
-      orderId,
-      paymentId,
-      userId: userDetails.email, // Using email as user identifier
-      userDetails,
+      invoice_number: generateInvoiceNumber(),
+      order_id: orderId,
+      payment_id: paymentId,
+      user_id: userDetails.email, // Using email as user identifier
+      user_details: userDetails,
       items: items.map((item: any) => ({
         id: item.id || `${item.name}-${Date.now()}`,
         name: item.name,
@@ -79,15 +79,15 @@ export async function POST(request: NextRequest) {
         type: item.type
       })),
       subtotal,
-      advanceAmount,
-      remainingAmount,
-      totalAmount: subtotal,
-      visitTime,
+      advance_amount: advanceAmount,
+      remaining_amount: remainingAmount,
+      total_amount: subtotal,
+      visit_time: visitTime,
       status: 'pending' as const,
-      paymentStatus: 'advance_paid' as const,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      restaurantDetails: {
+      payment_status: 'advance_paid' as const,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      restaurant_details: {
         name: "Harvey's Cafe",
         address: "123 Main Street, City, State 12345",
         phone: "+91 9876543210",
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
       orderId,
       paymentId,
       invoiceId: invoiceData.id,
-      invoiceNumber: invoiceData.invoiceNumber,
+      invoiceNumber: invoiceData.invoice_number,
       message: 'Payment verified successfully',
     })
   } catch (error) {

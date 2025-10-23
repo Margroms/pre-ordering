@@ -4,15 +4,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Calendar, CreditCard, Eye, Download, ArrowLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { useInvoice } from '@/context/InvoiceContext';
 import { Invoice } from '@/types/invoice';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { loadRazorpay } from '@/lib/razorpay';
+import toast from 'react-hot-toast';
+import { supabase } from '@/lib/supabase';
 
 const InvoicesPage = () => {
   const { user, userDetails } = useAuth();
-  const { getInvoices, isLoading } = useInvoice();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (user && userDetails?.email) {
@@ -23,11 +25,188 @@ const InvoicesPage = () => {
   const fetchInvoices = async () => {
     if (userDetails?.email) {
       try {
-        const userInvoices = await getInvoices(userDetails.email);
-        setInvoices(userInvoices);
+        setIsLoading(true);
+        console.log('Fetching invoices from Supabase for user:', userDetails.email);
+        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+        console.log('Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+        
+        // Check if Supabase is properly configured
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+          console.error('Supabase environment variables not configured');
+          toast.error('Database not configured. Please check environment variables.');
+          setInvoices([]);
+          return;
+        }
+        
+        // Fetch from Supabase directly instead of using context
+        const { data: invoices, error } = await supabase
+          .from('invoices')
+          .select('*')
+          .eq('user_id', userDetails.email)
+          .order('created_at', { ascending: false });
+
+        console.log('Supabase response - data:', invoices);
+        console.log('Supabase response - error:', error);
+
+        if (error) {
+          console.error('Error fetching invoices from Supabase:', error);
+          console.error('Error details:', JSON.stringify(error, null, 2));
+          
+          // Check if it's a table doesn't exist error
+          if (error.message?.includes('relation "invoices" does not exist')) {
+            toast.error('Database table not found. Please create the invoices table in Supabase.');
+          } else {
+            toast.error(`Failed to load invoices: ${error.message || 'Unknown error'}`);
+          }
+          setInvoices([]);
+          return;
+        }
+
+        console.log('Fetched invoices from Supabase:', invoices);
+        
+        // Convert snake_case to camelCase for frontend
+        const convertedInvoices = (invoices || []).map((invoice: any) => ({
+          id: invoice.id,
+          invoiceNumber: invoice.invoice_number,
+          orderId: invoice.order_id,
+          paymentId: invoice.payment_id,
+          userId: invoice.user_id,
+          userDetails: invoice.user_details,
+          items: invoice.items,
+          subtotal: invoice.subtotal,
+          advanceAmount: invoice.advance_amount,
+          remainingAmount: invoice.remaining_amount,
+          totalAmount: invoice.total_amount,
+          visitTime: invoice.visit_time,
+          status: invoice.status,
+          paymentStatus: invoice.payment_status,
+          createdAt: invoice.created_at,
+          updatedAt: invoice.updated_at,
+          restaurantDetails: invoice.restaurant_details
+        }));
+        
+        setInvoices(convertedInvoices);
       } catch (error) {
         console.error('Error fetching invoices:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        toast.error('Failed to load invoices. Please check your internet connection.');
+        setInvoices([]);
+      } finally {
+        setIsLoading(false);
       }
+    }
+  };
+
+  const processPayment = async (invoice: Invoice) => {
+    try {
+      // Load Razorpay script
+      const Razorpay = await loadRazorpay();
+      
+      // Create order on backend
+      const orderResponse = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: invoice.advanceAmount,
+          currency: 'INR',
+          items: invoice.items,
+          visitTime: invoice.visitTime,
+          userDetails: invoice.userDetails,
+        }),
+      });
+
+      const orderData = await orderResponse.json();
+
+      if (!orderResponse.ok) {
+        throw new Error(orderData.error || 'Failed to create payment order');
+      }
+
+      // Configure Razorpay options
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_1234567890',
+        amount: invoice.advanceAmount * 100, // Convert to paise
+        currency: 'INR',
+        name: "Harvey's Cafe",
+        description: `Payment for Order ${invoice.invoiceNumber}`,
+        order_id: orderData.orderId,
+        prefill: {
+          name: invoice.userDetails.name,
+          email: invoice.userDetails.email,
+          contact: invoice.userDetails.phone,
+        },
+        theme: {
+          color: '#eb3e04',
+        },
+        handler: async (response: any) => {
+          try {
+            // Verify payment
+            const verifyResponse = await fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                orderId: response.razorpay_order_id,
+                paymentId: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+                visitTime: invoice.visitTime,
+                items: invoice.items,
+                userDetails: invoice.userDetails,
+              }),
+            });
+
+            if (verifyResponse.ok) {
+              const result = await verifyResponse.json();
+              toast.success(`Payment successful! Invoice #${result.invoiceNumber} generated.`);
+              
+              // Update invoice status in Supabase
+              const { error: updateError } = await supabase
+                .from('invoices')
+                .update({ 
+                  status: 'confirmed', 
+                  payment_status: 'advance_paid',
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', invoice.id);
+
+              if (updateError) {
+                console.error('Error updating invoice in Supabase:', updateError);
+                toast.error('Payment successful but failed to update order status');
+                return;
+              }
+
+              // Update local state
+              const updatedInvoices = invoices.map(inv => 
+                inv.id === invoice.id 
+                  ? { ...inv, status: 'confirmed' as const, paymentStatus: 'advance_paid' as const }
+                  : inv
+              );
+              setInvoices(updatedInvoices);
+              
+            } else {
+              toast.error('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            toast.error('Payment verification failed');
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            toast.error('Payment cancelled');
+          },
+        },
+      };
+
+      // Open Razorpay payment modal
+      const razorpay = new Razorpay(options);
+      razorpay.open();
+
+    } catch (error) {
+      console.error('Payment processing error:', error);
+      toast.error('Failed to process payment. Please try again.');
     }
   };
 
@@ -44,7 +223,8 @@ const InvoicesPage = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'approved': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'confirmed': return 'bg-green-100 text-green-800 border-green-200';
       case 'completed': return 'bg-green-100 text-green-800 border-green-200';
       case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -53,6 +233,7 @@ const InvoicesPage = () => {
 
   const getPaymentStatusColor = (status: string) => {
     switch (status) {
+      case 'pending': return 'bg-gray-100 text-gray-800';
       case 'advance_paid': return 'bg-yellow-100 text-yellow-800';
       case 'fully_paid': return 'bg-green-100 text-green-800';
       case 'refunded': return 'bg-red-100 text-red-800';
@@ -96,7 +277,7 @@ const InvoicesPage = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-[#eb3e04] text-white rounded-lg hover:bg-red-600 transition-colors font-garet"
               >
                 <RefreshCw className="w-4 h-4" />
-                Refresh
+                Refresh Orders
               </button>
             </div>
             <p className="text-gray-600 font-garet">View and manage your order invoices</p>
@@ -139,7 +320,7 @@ const InvoicesPage = () => {
                           {invoice.status.toUpperCase()}
                         </span>
                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${getPaymentStatusColor(invoice.paymentStatus)}`}>
-                          {invoice.paymentStatus.replace('_', ' ').toUpperCase()}
+                          {invoice.paymentStatus === 'pending' ? 'PENDING PAYMENT' : invoice.paymentStatus.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
                       
@@ -163,21 +344,39 @@ const InvoicesPage = () => {
                           <span className="font-semibold">Visit Time:</span> {formatDate(invoice.visitTime)}
                         </p>
                         <p className="text-sm text-gray-600 font-garet">
-                          <span className="font-semibold">Advance Paid:</span> ₹{invoice.advanceAmount.toFixed(2)}
-                          {invoice.remainingAmount > 0 && (
-                            <span className="ml-2">
-                              | <span className="font-semibold">Remaining:</span> ₹{invoice.remainingAmount.toFixed(2)}
-                            </span>
+                          {invoice.paymentStatus === 'pending' ? (
+                            <>
+                              <span className="font-semibold">Advance Required:</span> ₹{invoice.advanceAmount.toFixed(2)}
+                              {invoice.remainingAmount > 0 && (
+                                <span className="ml-2">
+                                  | <span className="font-semibold">Remaining:</span> ₹{invoice.remainingAmount.toFixed(2)}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className="font-semibold">Advance Paid:</span> ₹{invoice.advanceAmount.toFixed(2)}
+                              {invoice.remainingAmount > 0 && (
+                                <span className="ml-2">
+                                  | <span className="font-semibold">Remaining:</span> ₹{invoice.remainingAmount.toFixed(2)}
+                                </span>
+                              )}
+                            </>
                           )}
                         </p>
                         {invoice.status === 'pending' && (
                           <p className="text-sm text-yellow-600 font-garet mt-1">
-                            ⏳ <span className="font-semibold">Status:</span> Waiting for restaurant confirmation
+                            ⏳ <span className="font-semibold">Status:</span> Waiting for restaurant approval
+                          </p>
+                        )}
+                        {invoice.status === 'approved' && (
+                          <p className="text-sm text-blue-600 font-garet mt-1">
+                            ✅ <span className="font-semibold">Status:</span> Order approved! Please proceed to payment.
                           </p>
                         )}
                         {invoice.status === 'confirmed' && (
-                          <p className="text-sm text-blue-600 font-garet mt-1">
-                            ✅ <span className="font-semibold">Status:</span> Order confirmed! Please visit at scheduled time.
+                          <p className="text-sm text-green-600 font-garet mt-1">
+                            🎉 <span className="font-semibold">Status:</span> Order confirmed! Please visit at scheduled time.
                           </p>
                         )}
                         {invoice.status === 'cancelled' && (
@@ -199,6 +398,18 @@ const InvoicesPage = () => {
                           View
                         </motion.button>
                       </Link>
+                      {invoice.status === 'approved' && (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => processPayment(invoice)}
+                          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg font-grimpt font-bold hover:bg-green-700 transition-colors"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          Pay Now
+                        </motion.button>
+                      )}
+                      
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}

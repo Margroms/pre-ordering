@@ -1,4 +1,14 @@
 export const menuItems = [
+    // Test Item
+    {
+        image: "/menuimages/cheese-pizza.png", // Using existing image
+        name: "Test Food",
+        price: ["₹0"],
+        description: "Test item for admin panel testing - completely free!",
+        category: "Test",
+        type: "Veg",
+    },
+    
     // Rolls
     {
         image: "/menuimages/vegroll.png",

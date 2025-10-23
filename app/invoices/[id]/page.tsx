@@ -4,15 +4,15 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Download, Calendar, CreditCard, MapPin, Phone, Mail, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useInvoice } from '@/context/InvoiceContext';
 import { Invoice } from '@/types/invoice';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { supabase } from '@/lib/supabase';
 
 const InvoiceDetailPage = () => {
   const params = useParams();
   const router = useRouter();
-  const { getInvoiceById, isLoading } = useInvoice();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (params.id) {
@@ -22,15 +22,54 @@ const InvoiceDetailPage = () => {
 
   const fetchInvoice = async (invoiceId: string) => {
     try {
-      const invoiceData = await getInvoiceById(invoiceId);
+      setIsLoading(true);
+      console.log('Fetching invoice from Supabase:', invoiceId);
+      
+      const { data: invoiceData, error } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('id', invoiceId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching invoice from Supabase:', error);
+        router.push('/invoices');
+        return;
+      }
+
       if (invoiceData) {
-        setInvoice(invoiceData);
+        console.log('Fetched invoice from Supabase:', invoiceData);
+        
+        // Convert snake_case to camelCase for frontend
+        const convertedInvoice = {
+          id: invoiceData.id,
+          invoiceNumber: invoiceData.invoice_number,
+          orderId: invoiceData.order_id,
+          paymentId: invoiceData.payment_id,
+          userId: invoiceData.user_id,
+          userDetails: invoiceData.user_details,
+          items: invoiceData.items,
+          subtotal: invoiceData.subtotal,
+          advanceAmount: invoiceData.advance_amount,
+          remainingAmount: invoiceData.remaining_amount,
+          totalAmount: invoiceData.total_amount,
+          visitTime: invoiceData.visit_time,
+          status: invoiceData.status,
+          paymentStatus: invoiceData.payment_status,
+          createdAt: invoiceData.created_at,
+          updatedAt: invoiceData.updated_at,
+          restaurantDetails: invoiceData.restaurant_details
+        };
+        
+        setInvoice(convertedInvoice);
       } else {
         router.push('/invoices');
       }
     } catch (error) {
       console.error('Error fetching invoice:', error);
       router.push('/invoices');
+    } finally {
+      setIsLoading(false);
     }
   };
 

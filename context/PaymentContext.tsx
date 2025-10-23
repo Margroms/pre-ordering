@@ -11,6 +11,7 @@ interface PaymentContextType {
   visitTime: string
   setVisitTime: (time: string) => void
   processPayment: () => Promise<void>
+  createOrderRequest: () => Promise<void>
 }
 
 const PaymentContext = createContext<PaymentContextType | undefined>(undefined)
@@ -21,6 +22,71 @@ export function PaymentProvider({ children }: { children: React.ReactNode }) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [visitTime, setVisitTime] = useState('')
   const router = useRouter()
+
+  const createOrderRequest = async () => {
+    if (!visitTime) {
+      toast.error('Please select your visit time')
+      return
+    }
+
+    if (!userDetails) {
+      console.error('User details not found:', userDetails)
+      toast.error('User details not found')
+      return
+    }
+
+    console.log('User details found:', userDetails)
+    setIsProcessing(true)
+
+    try {
+      // Calculate amounts
+      const totalAmount = getCartTotal()
+      const advanceAmount = totalAmount * 0.5
+      const remainingAmount = totalAmount - advanceAmount
+
+      // Convert visit time (minutes) to actual timestamp
+      const visitTimeInMinutes = parseInt(visitTime)
+      const visitTimestamp = new Date(Date.now() + visitTimeInMinutes * 60 * 1000).toISOString()
+
+      // Create order request (without payment)
+      const orderResponse = await fetch('/api/create-order-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: cartItems,
+          userDetails,
+          visitTime: visitTimestamp,
+          subtotal: totalAmount,
+          advanceAmount,
+          remainingAmount,
+          totalAmount,
+        }),
+      })
+
+      const orderData = await orderResponse.json()
+
+      if (!orderResponse.ok) {
+        throw new Error(orderData.error || 'Failed to create order request')
+      }
+
+      // Order is now stored in Supabase, no need for localStorage
+      console.log('Order created and stored in Supabase:', orderData.order)
+
+      // Clear cart
+      clearCart()
+
+      toast.success('Order request submitted! Waiting for admin approval.')
+      router.push('/invoices')
+
+    } catch (error) {
+      console.error('Error creating order request:', error)
+      toast.error('Failed to create order request. Please try again.')
+    } finally {
+      setIsProcessing(false)
+    }
+  }
 
   const processPayment = async () => {
     if (!visitTime) {
@@ -40,6 +106,10 @@ export function PaymentProvider({ children }: { children: React.ReactNode }) {
       const totalAmount = getCartTotal()
       const advanceAmount = totalAmount * 0.5
 
+      // Convert visit time (minutes) to actual timestamp
+      const visitTimeInMinutes = parseInt(visitTime)
+      const visitTimestamp = new Date(Date.now() + visitTimeInMinutes * 60 * 1000).toISOString()
+
       // Create order on your backend (you'll need to implement this)
       const orderResponse = await fetch('/api/create-order', {
         method: 'POST',
@@ -50,7 +120,7 @@ export function PaymentProvider({ children }: { children: React.ReactNode }) {
           amount: advanceAmount,
           currency: 'INR',
           items: cartItems,
-          visitTime,
+          visitTime: visitTimestamp,
           userDetails,
         }),
       })
@@ -92,7 +162,7 @@ export function PaymentProvider({ children }: { children: React.ReactNode }) {
                   orderId: response.razorpay_order_id,
                   paymentId: response.razorpay_payment_id,
                   signature: response.razorpay_signature,
-                  visitTime,
+                  visitTime: visitTimestamp,
                   items: cartItems,
                   userDetails,
                 }),
@@ -146,6 +216,7 @@ export function PaymentProvider({ children }: { children: React.ReactNode }) {
     visitTime,
     setVisitTime,
     processPayment,
+    createOrderRequest,
   }
 
   return (

@@ -2,23 +2,39 @@
 
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 interface ProtectedRouteProps {
   children: React.ReactNode
+  requiredRole?: 'customer' | 'admin'
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, requiredRole = 'customer' }: ProtectedRouteProps) {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const [adminLoading, setAdminLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login')
+    if (requiredRole === 'admin') {
+      // Check admin authentication
+      const adminToken = localStorage.getItem('adminToken')
+      setIsAdmin(!!adminToken)
+      setAdminLoading(false)
+      
+      if (!adminToken) {
+        router.push('/admin/login')
+      }
+    } else {
+      // Customer route - check regular auth
+      if (!loading && !user) {
+        router.push('/login')
+      }
+      setAdminLoading(false)
     }
-  }, [user, loading, router])
+  }, [user, loading, router, requiredRole])
 
-  if (loading) {
+  if (loading || adminLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-white font-grimpt text-xl">Loading...</div>
@@ -26,7 +42,11 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
-  if (!user) {
+  if (requiredRole === 'admin' && !isAdmin) {
+    return null
+  }
+
+  if (requiredRole === 'customer' && !user) {
     return null
   }
 

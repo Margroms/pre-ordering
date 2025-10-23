@@ -15,10 +15,13 @@ import {
   Package,
   IndianRupee,
   Filter,
-  Search
+  Search,
+  RefreshCw
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase'
+import ProtectedRoute from '@/components/ProtectedRoute'
 
 interface Order {
   id: string
@@ -44,13 +47,13 @@ interface Order {
   remainingAmount: number
   totalAmount: number
   visitTime: string
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled'
-  paymentStatus: 'advance_paid' | 'fully_paid' | 'refunded'
+  status: 'pending' | 'approved' | 'confirmed' | 'completed' | 'cancelled'
+  paymentStatus: 'pending' | 'advance_paid' | 'fully_paid' | 'refunded'
   createdAt: string
   updatedAt: string
 }
 
-export default function AdminDashboard() {
+function AdminDashboard() {
   const [orders, setOrders] = useState<Order[]>([])
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -60,13 +63,17 @@ export default function AdminDashboard() {
   const router = useRouter()
 
   useEffect(() => {
+    console.log('Admin dashboard useEffect running')
     // Check admin authentication
     const adminToken = localStorage.getItem('adminToken')
+    console.log('Admin token found:', !!adminToken)
     if (!adminToken) {
+      console.log('No admin token, redirecting to login')
       router.push('/admin/login')
       return
     }
 
+    console.log('Loading orders...')
     // Load orders from localStorage (in a real app, this would be from your backend)
     loadOrders()
   }, [router])
@@ -90,22 +97,54 @@ export default function AdminDashboard() {
     setFilteredOrders(filtered)
   }, [orders, searchTerm, statusFilter])
 
-  const loadOrders = () => {
+  const loadOrders = async () => {
     try {
-      // In a real app, you'd fetch from your backend
-      // For now, we'll simulate with localStorage data
-      const invoices = JSON.parse(localStorage.getItem('invoices') || '[]')
+      console.log('Loading orders from Supabase...')
       
-      // Convert invoices to orders format and add pending status by default
-      const ordersData = invoices.map((invoice: any) => ({
-        ...invoice,
-        status: invoice.status || 'pending'
-      }))
+      // Fetch all orders from Supabase
+      const { data: invoices, error } = await supabase
+        .from('invoices')
+        .select('*')
+        .order('created_at', { ascending: false })
 
+      if (error) {
+        console.error('Error fetching orders from Supabase:', error)
+        toast.error('Failed to load orders')
+        setOrders([])
+        setLoading(false)
+        return
+      }
+
+      console.log('Admin dashboard - Raw invoices from Supabase:', invoices)
+      console.log('Admin dashboard - Number of invoices:', invoices?.length || 0)
+      
+      // Convert invoices to orders format
+      const ordersData = (invoices || []).map((invoice: any) => ({
+        id: invoice.id,
+        invoiceNumber: invoice.invoice_number,
+        orderId: invoice.order_id,
+        paymentId: invoice.payment_id,
+        userId: invoice.user_id,
+        userDetails: invoice.user_details,
+        items: invoice.items,
+        subtotal: invoice.subtotal,
+        advanceAmount: invoice.advance_amount,
+        remainingAmount: invoice.remaining_amount,
+        totalAmount: invoice.total_amount,
+        visitTime: invoice.visit_time,
+        status: invoice.status || 'pending',
+        paymentStatus: invoice.payment_status || 'pending',
+        createdAt: invoice.created_at,
+        updatedAt: invoice.updated_at,
+        restaurantDetails: invoice.restaurant_details
+      }))
+      
+      console.log('Admin dashboard - Processed orders data:', ordersData)
       setOrders(ordersData)
       setLoading(false)
     } catch (error) {
       console.error('Error loading orders:', error)
+      toast.error('Failed to load orders')
       setOrders([])
       setLoading(false)
     }
@@ -118,9 +157,24 @@ export default function AdminDashboard() {
     router.push('/admin/login')
   }
 
-  const updateOrderStatus = (orderId: string, newStatus: 'confirmed' | 'cancelled') => {
+  const updateOrderStatus = async (orderId: string, newStatus: 'approved' | 'cancelled') => {
     try {
-      // Update in state
+      // Update in Supabase
+      const { error } = await supabase
+        .from('invoices')
+        .update({ 
+          status: newStatus, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', orderId)
+
+      if (error) {
+        console.error('Error updating order in Supabase:', error)
+        toast.error('Failed to update order status')
+        return
+      }
+
+      // Update in local state
       const updatedOrders = orders.map(order => 
         order.id === orderId 
           ? { ...order, status: newStatus, updatedAt: new Date().toISOString() }
@@ -128,16 +182,7 @@ export default function AdminDashboard() {
       )
       setOrders(updatedOrders)
 
-      // Update in localStorage
-      const invoices = JSON.parse(localStorage.getItem('invoices') || '[]')
-      const updatedInvoices = invoices.map((invoice: any) => 
-        invoice.id === orderId 
-          ? { ...invoice, status: newStatus, updatedAt: new Date().toISOString() }
-          : invoice
-      )
-      localStorage.setItem('invoices', JSON.stringify(updatedInvoices))
-
-      const statusText = newStatus === 'confirmed' ? 'accepted' : 'rejected'
+      const statusText = newStatus === 'approved' ? 'approved' : 'rejected'
       toast.success(`Order ${statusText} successfully`)
       
       setSelectedOrder(null)
@@ -160,7 +205,8 @@ export default function AdminDashboard() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'approved': return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'confirmed': return 'bg-green-100 text-green-800 border-green-200'
       case 'completed': return 'bg-green-100 text-green-800 border-green-200'
       case 'cancelled': return 'bg-red-100 text-red-800 border-red-200'
       default: return 'bg-gray-100 text-gray-800 border-gray-200'
@@ -170,6 +216,7 @@ export default function AdminDashboard() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending': return <Clock className="w-4 h-4" />
+      case 'approved': return <CheckCircle className="w-4 h-4" />
       case 'confirmed': return <CheckCircle className="w-4 h-4" />
       case 'completed': return <CheckCircle className="w-4 h-4" />
       case 'cancelled': return <XCircle className="w-4 h-4" />
@@ -208,6 +255,17 @@ export default function AdminDashboard() {
               </div>
             </div>
             <button
+              onClick={() => {
+                console.log('Manual refresh clicked')
+                setLoading(true)
+                loadOrders()
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-[#eb3e04] text-white rounded-lg hover:bg-red-600 transition-colors font-garet"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh Orders
+            </button>
+            <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-red-600 transition-colors font-garet"
             >
@@ -219,6 +277,80 @@ export default function AdminDashboard() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Debug Info */}
+        <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6">
+          <h3 className="font-bold text-yellow-800 mb-2">Debug Info:</h3>
+          <p className="text-sm text-yellow-700">
+            Orders loaded from Supabase: {orders.length} | 
+            Filtered: {filteredOrders.length}
+          </p>
+          <button
+            onClick={async () => {
+              try {
+                // Create a test order
+                const testOrder = {
+                  id: `TEST_${Date.now()}`,
+                  invoiceNumber: `TEST_INV_${Date.now()}`,
+                  orderId: `TEST_ORD_${Date.now()}`,
+                  paymentId: '',
+                  userId: 'test@example.com',
+                  userDetails: {
+                    name: 'Test User',
+                    email: 'test@example.com',
+                    phone: '1234567890'
+                  },
+                  items: [{
+                    id: 'test-item',
+                    name: 'Test Food',
+                    price: '₹0',
+                    quantity: 1,
+                    category: 'Test',
+                    image: '/menuimages/cheese-pizza.png',
+                    description: 'Test item'
+                  }],
+                  subtotal: 0,
+                  advanceAmount: 0,
+                  remainingAmount: 0,
+                  totalAmount: 0,
+                  visitTime: new Date().toISOString(),
+                  status: 'pending',
+                  paymentStatus: 'pending',
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                  restaurantDetails: {
+                    name: "Harvey's Cafe",
+                    address: "123 Main Street, City, State 12345",
+                    phone: "+91 9876543210",
+                    email: "info@harveyscafe.com",
+                    gst: "29ABCDE1234F1Z5"
+                  }
+                }
+                
+                // Store in Supabase
+                const { error } = await supabase
+                  .from('invoices')
+                  .insert([testOrder])
+
+                if (error) {
+                  console.error('Error creating test order:', error)
+                  toast.error('Failed to create test order')
+                  return
+                }
+
+                console.log('Test order created and stored in Supabase')
+                toast.success('Test order created!')
+                loadOrders()
+              } catch (error) {
+                console.error('Error creating test order:', error)
+                toast.error('Failed to create test order')
+              }
+            }}
+            className="mt-2 px-3 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
+          >
+            Create Test Order
+          </button>
+        </div>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <motion.div 
@@ -251,9 +383,9 @@ export default function AdminDashboard() {
                 <CheckCircle className="w-6 h-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-garet text-gray-600">Confirmed</p>
+                <p className="text-sm font-garet text-gray-600">Approved</p>
                 <p className="text-2xl font-grimpt font-bold text-gray-900">
-                  {orders.filter(o => o.status === 'confirmed').length}
+                  {orders.filter(o => o.status === 'approved').length}
                 </p>
               </div>
             </div>
@@ -324,7 +456,7 @@ export default function AdminDashboard() {
               >
                 <option value="all">All Orders</option>
                 <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
+                <option value="approved">Approved</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
               </select>
@@ -368,6 +500,13 @@ export default function AdminDashboard() {
                           {getStatusIcon(order.status)}
                           {order.status.toUpperCase()}
                         </span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold border ${
+                          order.paymentStatus === 'pending' 
+                            ? 'bg-gray-100 text-gray-800 border-gray-200' 
+                            : 'bg-green-100 text-green-800 border-green-200'
+                        }`}>
+                          {order.paymentStatus === 'pending' ? 'PENDING PAYMENT' : 'PAID'}
+                        </span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 font-garet">
                         <div className="flex items-center gap-2">
@@ -389,11 +528,11 @@ export default function AdminDashboard() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
-                            updateOrderStatus(order.id, 'confirmed')
+                            updateOrderStatus(order.id, 'approved')
                           }}
                           className="px-3 py-1 bg-green-600 text-white text-sm font-bold rounded hover:bg-green-700 transition-colors"
                         >
-                          Accept
+                          Approve
                         </button>
                         <button
                           onClick={(e) => {
@@ -494,8 +633,10 @@ export default function AdminDashboard() {
                     <span className="font-garet">Subtotal:</span>
                     <span className="font-garet">₹{selectedOrder.subtotal.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-green-600">
-                    <span className="font-garet">Advance Paid:</span>
+                  <div className={`flex justify-between ${selectedOrder.paymentStatus === 'pending' ? 'text-gray-600' : 'text-green-600'}`}>
+                    <span className="font-garet">
+                      {selectedOrder.paymentStatus === 'pending' ? 'Advance Required:' : 'Advance Paid:'}
+                    </span>
                     <span className="font-garet">₹{selectedOrder.advanceAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-orange-600">
@@ -512,10 +653,10 @@ export default function AdminDashboard() {
                 {selectedOrder.status === 'pending' && (
                   <div className="flex gap-4 mt-6">
                     <button
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'confirmed')}
+                      onClick={() => updateOrderStatus(selectedOrder.id, 'approved')}
                       className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg font-grimpt font-bold hover:bg-green-700 transition-colors"
                     >
-                      Accept Order
+                      Approve Order
                     </button>
                     <button
                       onClick={() => updateOrderStatus(selectedOrder.id, 'cancelled')}
@@ -531,5 +672,13 @@ export default function AdminDashboard() {
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+export default function AdminDashboardPage() {
+  return (
+    <ProtectedRoute requiredRole="admin">
+      <AdminDashboard />
+    </ProtectedRoute>
   )
 }

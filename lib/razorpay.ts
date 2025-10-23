@@ -6,6 +6,27 @@ export const razorpayConfig = {
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 };
 
+// Load Razorpay script dynamically
+export const loadRazorpay = (): Promise<any> => {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && (window as any).Razorpay) {
+      resolve((window as any).Razorpay);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => {
+      resolve((window as any).Razorpay);
+    };
+    script.onerror = () => {
+      console.error('Failed to load Razorpay script');
+      resolve(null);
+    };
+    document.body.appendChild(script);
+  });
+};
+
 // Initialize Razorpay instance
 export const razorpay = new Razorpay({
   key_id: razorpayConfig.key_id,

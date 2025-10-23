@@ -27,8 +27,8 @@ export interface Invoice {
   remainingAmount: number;
   totalAmount: number;
   visitTime: string;
-  status: 'confirmed' | 'completed' | 'cancelled';
-  paymentStatus: 'advance_paid' | 'fully_paid' | 'refunded';
+  status: 'pending' | 'approved' | 'confirmed' | 'completed' | 'cancelled';
+  paymentStatus: 'pending' | 'advance_paid' | 'fully_paid' | 'refunded';
   createdAt: string;
   updatedAt: string;
   restaurantDetails: {

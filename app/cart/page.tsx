@@ -8,7 +8,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 
 function Cart() {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal, isLoading } = useCart();
-  const { isProcessing, visitTime, setVisitTime, processPayment } = usePayment();
+  const { isProcessing, visitTime, setVisitTime, processPayment, createOrderRequest } = usePayment();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -328,7 +328,7 @@ function Cart() {
         </motion.div>
 
         <motion.button 
-          onClick={processPayment}
+          onClick={createOrderRequest}
           disabled={isLoading || isProcessing || !visitTime}
           className="w-full bg-[#eb3e04] text-white py-3 sm:py-4 rounded-lg font-bold text-base sm:text-lg hover:bg-[#d32f02] active:scale-95 transition-all font-grimpt disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           initial={{ y: 20, opacity: 0 }}
@@ -348,12 +348,12 @@ function Cart() {
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" as const }}
               />
-              Processing...
+              Submitting Order...
             </motion.div>
           ) : (
             <>
-              <CreditCard className="w-5 h-5" />
-              Pay Advance ₹{(getCartTotal() * 0.5).toFixed(2)}
+              <ShoppingBag className="w-5 h-5" />
+              Submit Order Request
             </>
           )}
         </motion.button>
