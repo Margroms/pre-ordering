@@ -115,7 +115,7 @@ function Cart() {
           {cartItems.map((item, index) => (
             <motion.div
               key={item.id}
-              className="bg-[url(/cartbg.svg)] p-4 rounded-xl shadow-sm border"
+              className="bg-white p-4 rounded-xl shadow-lg border border-gray-200"
               variants={itemVariants}
               initial="hidden"
               animate="visible"
@@ -126,7 +126,7 @@ function Cart() {
               <div className="flex items-center gap-3 sm:gap-4">
                 {/* Item Image */}
                 <motion.div 
-                  className="w-16 h-16 sm:w-20 sm:h-20 bg-[url(/cartbg.svg)] rounded-lg overflow-hidden flex-shrink-0"
+                  className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0"
                   whileHover={{ scale: 1.05 }}
                 >
                   <img 
@@ -140,8 +140,8 @@ function Cart() {
                       if (sibling) sibling.style.display = 'flex';
                     }}
                   />
-                  <div className="w-full h-full bg-[url(/cartbg.svg)] flex items-center justify-center text-gray-500 text-xs" style={{display: 'none'}}>
-                    IMG
+                  <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500 text-xs" style={{display: 'none'}}>
+                    IMAGE
                   </div>
                 </motion.div>
 
@@ -299,7 +299,7 @@ function Cart() {
 
       {/* Payment Summary */}
       <motion.div 
-        className="mt-6 sm:mt-8 bg-[url(/cartbg.svg)] p-4 sm:p-6 rounded-xl shadow-sm border"
+        className="mt-6 sm:mt-8 bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-gray-200"
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.6, duration: 0.6 }}
