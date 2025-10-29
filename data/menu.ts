@@ -182,7 +182,7 @@ export const menuItems = [
 
     // Pasta
     {
-        image: "/menuimages/alfredo-veg-pasta.png",
+        image: "/menuimages/alfredo.jpg",
         name: "Alfredo Veg Pasta",
         price: ["₹149"],
         description: "Creamy alfredo pasta with fresh vegetables.",
@@ -191,7 +191,7 @@ export const menuItems = [
     },
    
     {
-        image: "/menuimages/alfredo-chicken-pasta.png",
+        image: "/menuimages/chi alfredo.jpg",
         name: "Alfredo Chicken Pasta",
         price: ["₹189"],
         description: "Creamy alfredo pasta with tender chicken pieces.",

@@ -31,7 +31,7 @@ function Menu() {
     'Burgers': '/menuimages/chicken-tikka-burger.png',
     'Broasted': '/menuimages/broasted-chicken.png',
     'Fries': '/menuimages/original-salted-fries.png',
-    'Pasta': '/menuimages/alfredo-veg-pasta.png',
+    'Pasta': '/menuimages/alfredo.jpg',
     'Sauce': '/menuimages/mayo.png'
   };
 
